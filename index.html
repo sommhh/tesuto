@@ -40,11 +40,33 @@ button,select,input{outline:none}
 <div class="flex items-center gap-1.5">
 <div class="flex items-center gap-1 bg-slate-800/40 rounded-lg border border-slate-700/50 px-1.5 py-1">
 <label class="text-[11px] text-slate-400">線</label>
-<select id="lineColor" class="bg-transparent text-xs"><option value="#000000">黒</option><option value="#ef4444">赤</option><option value="#3b82f6">青</option><option value="#22c55e">緑</option><option value="#eab308">黄</option><option value="#a855f7">紫</option><option value="#f97316">橙</option><option value="#06b6d4">水</option><option value="#6b7280">灰</option><option value="#92400e">茶</option></select>
+<select id="lineColor" class="bg-transparent text-xs">
+    <option class="bg-slate-800" value="#000000">黒</option>
+    <option class="bg-slate-800" value="#ef4444">赤</option>
+    <option class="bg-slate-800" value="#3b82f6">青</option>
+    <option class="bg-slate-800" value="#22c55e">緑</option>
+    <option class="bg-slate-800" value="#eab308">黄</option>
+    <option class="bg-slate-800" value="#a855f7">紫</option>
+    <option class="bg-slate-800" value="#f97316">橙</option>
+    <option class="bg-slate-800" value="#06b6d4">水</option>
+    <option class="bg-slate-800" value="#6b7280">灰</option>
+    <option class="bg-slate-800" value="#92400e">茶</option>
+</select>
 </div>
 <div class="flex items-center gap-1 bg-slate-800/40 rounded-lg border border-slate-700/50 px-1.5 py-1">
 <label class="text-[11px] text-slate-400">番</label>
-<select id="labelColor" class="bg-transparent text-xs"><option value="#000000">黒</option><option value="#ef4444">赤</option><option value="#3b82f6">青</option><option value="#22c55e">緑</option><option value="#eab308">黄</option><option value="#a855f7">紫</option><option value="#f97316">橙</option><option value="#06b6d4">水</option><option value="#6b7280">灰</option><option value="#92400e">茶</option></select>
+<select id="labelColor" class="bg-transparent text-xs">
+    <option class="bg-slate-800" value="#000000">黒</option>
+    <option class="bg-slate-800" value="#ef4444">赤</option>
+    <option class="bg-slate-800" value="#3b82f6">青</option>
+    <option class="bg-slate-800" value="#22c55e">緑</option>
+    <option class="bg-slate-800" value="#eab308">黄</option>
+    <option class="bg-slate-800" value="#a855f7">紫</option>
+    <option class="bg-slate-800" value="#f97316">橙</option>
+    <option class="bg-slate-800" value="#06b6d4">水</option>
+    <option class="bg-slate-800" value="#6b7280">灰</option>
+    <option class="bg-slate-800" value="#92400e">茶</option>
+</select>
 </div>
 </div>
 <div class="hidden sm:block h-6 w-px bg-slate-800 mx-1"></div>
@@ -151,13 +173,10 @@ document.getElementById('eraserSize').oninput=e=>{eraserSize=+e.target.value;};
 document.getElementById('lineColor').onchange=e=>{currentLineColor=e.target.value;};
 document.getElementById('labelColor').onchange=e=>{currentLabelColor=e.target.value;};
 
-
-/* --- 修正: PDF生成ロジックの改善 (Tainted Canvas, URL長制限への対応) --- */
 async function exportToPDF(){
     const {jsPDF}=window.jspdf;
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
     
-    // バウンディングボックスの計算
     const bgImgs=bgLayer.querySelectorAll('image');
     if(bgImgs.length){
         bgImgs.forEach(img=>{
@@ -185,14 +204,12 @@ async function exportToPDF(){
     const pad=40;minX-=pad;minY-=pad;maxX+=pad;maxY+=pad;
     const w=maxX-minX,h=maxY-minY;
 
-    // キャンバスを用意
     const c=document.createElement('canvas');
     c.width=w;c.height=h;
     const ctx=c.getContext('2d');
     ctx.fillStyle='white';
     ctx.fillRect(0,0,w,h);
 
-    // 1. 背景画像を直接Canvasへ描画 (Tainted対策)
     if(bgImgs.length){
         for(let i=0;i<bgImgs.length;i++){
             const imgEl=bgImgs[i];
@@ -211,41 +228,36 @@ async function exportToPDF(){
                     ctx.globalAlpha=1.0;
                     res();
                 };
-                img.onerror=res; // エラーでも次へ進める
+                img.onerror=res;
                 img.src=href;
             });
         }
     }
 
-    // 2. SVGクローンから不要なものを消してBlobURLにする (URL長制限対策)
     const clone=svg.cloneNode(true);
-
-    // ▼▼▼【ここを変更】印刷時に赤点(接続点)を削除する処理を追加 ▼▼▼
+    
     const nodesLayerClone = clone.querySelector('#nodes');
     if (nodesLayerClone) {
         const nodeGroups = Array.from(nodesLayerClone.querySelectorAll('g'));
         nodeGroups.forEach(g => {
-            // g要素内に fill="#ef4444" の circle があれば、それは赤点なのでgごと削除
             if (g.querySelector('circle[fill="#ef4444"]')) {
                 g.remove();
             }
         });
     }
-    // ▲▲▲ 変更ここまで ▲▲▲
 
     ['bg','lines','nodes','eraseLayer'].forEach(id=>{
         const g=clone.querySelector('#'+id);
         if(g)g.removeAttribute('transform');
     });
     
-    // 背景画像はCanvasに描画済みなのでSVGクローンからは削除
     const cloneBgImgs=clone.querySelectorAll('#bg image');
     cloneBgImgs.forEach(img=>img.remove());
     
     const bgRect=clone.querySelector('#bg rect');
     if(bgRect)bgRect.setAttribute('fill','none');
 
-    clone.setAttribute('viewBox',minX+' '+minY+' '+w+' '+h);
+    clone.setAttribute('viewBox',`${minX} ${minY} ${w} ${h}`);
     clone.setAttribute('width',w);
     clone.setAttribute('height',h);
 
@@ -253,7 +265,6 @@ async function exportToPDF(){
     const svgBlob=new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
     const url=URL.createObjectURL(svgBlob);
 
-    // SVGをCanvasに重ねる
     return new Promise((res,rej)=>{
         const svgImg=new Image();
         svgImg.onload=()=>{
@@ -261,7 +272,6 @@ async function exportToPDF(){
             URL.revokeObjectURL(url);
             try{
                 const pdf=new jsPDF({orientation:w>h?'landscape':'portrait',unit:'px',format:[w,h]});
-                // JPEGにすることで容量を抑え、パフォーマンスを改善
                 pdf.addImage(c.toDataURL('image/jpeg', 0.95),'JPEG',0,0,w,h);
                 res(pdf);
             }catch(err){
@@ -276,12 +286,10 @@ async function exportToPDF(){
     });
 }
 
-// --- 修正: 印刷ボタン (ポップアップブロック対策・処理中表示) ---
 document.getElementById('print').onclick=async()=>{
     const btn = document.getElementById('print');
     const originalText = btn.textContent;
     
-    // 事前にタブを開くことでポップアップブロックを回避
     const printWindow = window.open('about:blank', '_blank');
     if(!printWindow){
         alert('ポップアップがブロックされました。ブラウザの設定で許可してください。');
@@ -289,6 +297,7 @@ document.getElementById('print').onclick=async()=>{
     }
     
     printWindow.document.write('<div style="font-family:sans-serif;padding:20px;">印刷データの準備中... しばらくお待ちください。</div>');
+    btn.disabled = true;
     btn.textContent = '準備中...';
     
     try {
@@ -299,14 +308,15 @@ document.getElementById('print').onclick=async()=>{
         printWindow.close();
         alert('印刷の準備に失敗しました: ' + e.message);
     } finally {
+        btn.disabled = false;
         btn.textContent = originalText;
     }
 };
 
-// --- 修正: 保存ボタン (処理中表示) ---
 document.getElementById('share').onclick=async()=>{
     const btn = document.getElementById('share');
     const originalText = btn.textContent;
+    btn.disabled = true;
     btn.textContent = '保存中...';
     
     try {
@@ -316,11 +326,11 @@ document.getElementById('share').onclick=async()=>{
         console.error(e);
         alert('保存失敗: ' + e.message);
     } finally {
+        btn.disabled = false;
         btn.textContent = originalText;
     }
 };
 
-// ファイル読み込み処理
 document.getElementById('file').addEventListener('change',async e=>{
   const f=e.target.files[0];if(!f)return;
   bgLayer.innerHTML='';
